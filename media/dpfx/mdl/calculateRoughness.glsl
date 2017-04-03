@@ -1,5 +1,8 @@
 float calculateRoughness( in vec3 N, in float roughnessU, in float roughnessV, in vec3 tangentU )
 {
+#if 1
+  return 0.5f * ( roughnessU + roughnessV );
+#else
   float roughness = roughnessU;
   if ( roughnessU != roughnessV )
   {
@@ -29,5 +32,6 @@ float calculateRoughness( in vec3 N, in float roughnessU, in float roughnessV, i
     roughness = b / sqrt( 1.0f - excentricitySquare * square( cosPhi ) );
   }
   return( roughness );
+#endif
 }
 

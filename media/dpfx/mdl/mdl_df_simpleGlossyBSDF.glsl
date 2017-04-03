@@ -5,7 +5,7 @@ vec4 mdl_df_simpleGlossyBSDF( in float roughnessU, in float roughnessV, in vec3 
   float cosTheta = dot( normal, lightDir );
   if ( 0.0f < cosTheta )
   {
-    float roughness = calculateRoughness( normal, roughnessU, roughnessV, tangentU );
+    float roughness = calculateRoughness( normal, 1.0f - roughnessU, 1.0f - roughnessV, tangentU );
 
     if ( ( mode == scatter_reflect ) || ( mode == scatter_reflect_transmit ) )
     {
@@ -41,7 +41,7 @@ vec4 mdl_df_simpleGlossyBSDFEnvironment( in float roughnessU, in float roughness
   vec3 rgb = vec3( 0.0f, 0.0f, 0.0f );
   if ( sys_EnvironmentSamplerEnabled )
   {
-    float roughness = calculateRoughness( normal, roughnessU, roughnessV, tangentU );
+    float roughness = calculateRoughness( normal, 1.0f - roughnessU, 1.0f - roughnessV, tangentU );
     lightDir = reflect( -viewDir, normal );
     lightDiffuse = evalEnvironmentMap( lightDir, roughness );
     lightSpecular = lightDiffuse;

@@ -6,7 +6,7 @@ vec4 mdl_df_backscatteringGlossyReflectionBSDF( in float roughnessU, in float ro
   float cosTheta = dot( normal, lightDir );
   if ( 0.0f < cosTheta )
   {
-    float roughness = calculateRoughness( normal, roughnessU, roughnessV, tangentU );
+    float roughness = calculateRoughness( normal, 1.0f - roughnessU, 1.0f - roughnessV, tangentU );
 
     // retro-reflection
     vec3 R = reflect( -lightDir, normal );
@@ -31,7 +31,7 @@ vec4 mdl_df_backscatteringGlossyReflectionBSDFEnvironment( in float roughnessU, 
   vec3 rgb = vec3( 0.0f, 0.0f, 0.0f );
   if ( sys_EnvironmentSamplerEnabled )
   {
-    float roughness = calculateRoughness( normal, roughnessU, roughnessV, tangentU );
+    float roughness = calculateRoughness( normal, 1.0f - roughnessU, 1.0f - roughnessV, tangentU );
     lightDir = reflect( -viewDir, normal );
     lightDiffuse = evalEnvironmentMap( lightDir, roughness );
     lightSpecular = lightDiffuse;

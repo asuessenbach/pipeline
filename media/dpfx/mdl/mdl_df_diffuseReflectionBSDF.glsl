@@ -2,10 +2,10 @@ vec4 mdl_df_diffuseReflectionBSDF( in vec3 materialDiffuse, in float roughness, 
 {
   float cosThetaI = max( 0.0f, dot( normal, lightDir ) );
   float factor = cosThetaI;
-  if ( ( 0.0f < factor ) && ( 0.0f < roughness ) )
+  if ( ( 0.0f < factor ) && ( roughness < 1.0f ) )
   {
     // see http://en.wikipedia.org/wiki/Oren%E2%80%93Nayar_reflectance_model
-    float sigmaSquare = 0.25f * PI_SQUARE * roughness * roughness;
+    float sigmaSquare = 0.25f * PI_SQUARE * (1.0f - roughness) * (1.0f - roughness);
     float A = 1.0f - 0.5f * sigmaSquare / ( sigmaSquare + 0.33f );
     float B = 0.45f * sigmaSquare / ( sigmaSquare + 0.09f );
 
@@ -42,7 +42,7 @@ vec4 mdl_df_diffuseReflectionBSDFEnvironment( in vec3 tint, in float roughness, 
   if ( sys_EnvironmentSamplerEnabled )
   {
     lightDir = reflect( -viewDir, normal );
-    lightDiffuse = evalEnvironmentMap( lightDir, roughness );
+    lightDiffuse = evalEnvironmentMap( lightDir, 1.0f - roughness );
     rgb = mdl_df_diffuseReflectionBSDF( tint, roughness, normal ).rgb;
   }
   return( vec4( rgb, 1.0f ) );
