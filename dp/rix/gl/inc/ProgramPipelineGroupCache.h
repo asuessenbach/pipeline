@@ -150,6 +150,9 @@ namespace dp
 
         uint32_t                               m_numberOfGPUs; // Number of GPUs for multicast extension
 
+        size_t m_activeContainerSize; // m_activeContainers.size() cache
+        ContainerCacheEntry const* m_containerCacheEntries; // cache
+
       private:
         std::unique_ptr<GeometryInstanceObserver> m_geometryInstanceObserver;
       };
@@ -328,12 +331,15 @@ namespace dp
           (*it)->m_bucket.clear();
           (*it)->m_count = 0;
         }
+
+        m_activeContainerSize = m_activeContainers.size();
       }
 
       template <typename VertexCache>
       void ProgramPipelineGroupCache<VertexCache>::generateParameterCache( )
       {
         ProgramParameterCache<PCT>::generateContainerCacheEntries( m_sortedGIs );
+        m_containerCacheEntries = ProgramParameterCache<PCT>::getContainerCacheEntries();
       }
 
 
@@ -370,7 +376,7 @@ namespace dp
       template <typename VertexCache>
       void ProgramPipelineGroupCache<VertexCache>::renderParameters( size_t cacheIndex )
       {
-        ProgramParameterCache<PCT>::renderParameters( getContainerCacheEntries() + cacheIndex * m_activeContainers.size() );
+        ProgramParameterCache<PCT>::renderParameters(m_containerCacheEntries + cacheIndex * m_activeContainerSize);
       }
 
     } // namespace gl
