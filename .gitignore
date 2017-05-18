@@ -1,0 +1,10 @@
+/3rdparty/
+!/3rdparty/assimp
+!/3rdparty/jsoncpp
+!/3rdparty/patches/*
+!/3rdparty/CMakeLists.txt
+
+/temp/
+/builds/
+
+/test/scripts/test_launch_site.txt
