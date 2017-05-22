@@ -209,7 +209,6 @@ namespace dp
 
       EffectLoader::EffectLoader( EffectLibraryImpl * effectLibrary )
         : dp::fx::EffectLoader( effectLibrary )
-        , m_materialBuilder( dp::home() + "/media/dpfx/mdl/MDL.cfg" )
       {
       }
 
@@ -619,12 +618,17 @@ namespace dp
 
       bool EffectLoader::loadEffects( std::string const& filename, dp::util::FileFinder const& fileFinder )
       {
+        if ( !m_materialBuilder )
+        {
+          m_materialBuilder = std::make_unique<MaterialBuilder>(dp::home() + "/media/dpfx/mdl/MDL.cfg");
+        }
+
         DP_ASSERT( dp::util::fileExists( filename ) );
         if ( m_loadedFiles.find( filename ) == m_loadedFiles.end() )
         {
-          m_materialBuilder.parseFile( filename, fileFinder );
+          m_materialBuilder->parseFile( filename, fileFinder );
 
-          std::map<std::string,MaterialData> const& materials = m_materialBuilder.getMaterials();
+          std::map<std::string,MaterialData> const& materials = m_materialBuilder->getMaterials();
           for ( std::map<std::string, MaterialData>::const_iterator mit = materials.begin(); mit != materials.end(); ++mit )
           {
             dp::fx::mdl::EffectSpec::DomainSpecs domainSpecs;

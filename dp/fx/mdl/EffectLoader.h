@@ -143,7 +143,7 @@ namespace dp
 
       private:
         std::set<std::string> m_loadedFiles;
-        MaterialBuilder       m_materialBuilder;
+        std::unique_ptr<MaterialBuilder> m_materialBuilder;
       }; // EffectLoader
 
     } // mdl
