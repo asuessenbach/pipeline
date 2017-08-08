@@ -58,13 +58,15 @@ namespace dp
           };
 
         protected:
-          virtual bool annotationBegin( std::string const& name ) = 0;
+          virtual bool annotationBegin( std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments) = 0;
           virtual void annotationEnd() = 0;
-          virtual bool argumentBegin( unsigned int idx, std::string const& type, std::string const& name ) = 0;
+          virtual bool argumentBegin( size_t idx ) = 0;
           virtual void argumentEnd() = 0;
           virtual bool arrayBegin( std::string const & type, size_t size ) = 0;
           virtual void arrayEnd() = 0;
-          virtual bool callBegin( std::string const& type, std::string const& name ) = 0;
+          virtual bool arrayElementBegin(size_t idx) = 0;
+          virtual void arrayElementEnd() = 0;
+          virtual bool callBegin( std::string const& type, std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments) = 0;
           virtual void callEnd() = 0;
           virtual void defaultRef( std::string const& type ) = 0;
           virtual bool enumTypeBegin( std::string const& name, size_t size ) = 0;
@@ -77,13 +79,17 @@ namespace dp
           virtual bool materialBegin( std::string const& name, dp::math::Vec4ui const& hash ) = 0;
           virtual void materialEnd() = 0;
           virtual bool matrixBegin( std::string const& type ) = 0;
+          virtual bool matrixElementBegin(size_t idx) = 0;
+          virtual void matrixElementEnd() = 0;
           virtual void matrixEnd() = 0;
-          virtual bool parameterBegin( unsigned int index, std::string const& name ) = 0;
+          virtual bool parameterBegin( unsigned int index, std::string const& modifier, std::string const& type, std::string const& name ) = 0;
           virtual void parameterEnd() = 0;
           virtual void referenceParameter( unsigned int idx ) = 0;
           virtual void referenceTemporary( unsigned int idx ) = 0;
-          virtual bool structureBegin( std::string const& type ) = 0;
+          virtual bool structureBegin(std::string const& name) = 0;
           virtual void structureEnd() = 0;
+          virtual bool structureMemberBegin(unsigned int idx) = 0;
+          virtual void structureMemberEnd() = 0;
           virtual bool structureTypeBegin( std::string const& name ) = 0;
           virtual void structureTypeElement( std::string const& type, std::string const& name ) = 0;
           virtual void structureTypeEnd() = 0;
@@ -99,12 +105,15 @@ namespace dp
           virtual void valueString( std::string const& value ) = 0;
           virtual void valueTexture( std::string const& file, GammaMode gamma ) = 0;
           virtual bool vectorBegin( std::string const& type ) = 0;
+          virtual bool vectorElementBegin(size_t idx) = 0;
+          virtual void vectorElementEnd() = 0;
           virtual void vectorEnd() = 0;
 
           void triggerTokenizeFunctionReturnType( std::string functionName );
 
         private:
           DP_FX_MDL_API bool checkDefaultField(std::string const& fieldName, mi::base::Handle<mi::neuraylib::IExpression const> const& expression);
+          DP_FX_MDL_API void tokenizeAnnotations(mi::base::Handle<mi::neuraylib::IAnnotation_block const> annotations);
           DP_FX_MDL_API void tokenizeArgument(mi::Size idx, std::string const& name, mi::base::Handle<mi::neuraylib::IExpression const> const& argumentExpression, mi::base::Handle<mi::neuraylib::IExpression const> const& defaultExpression);
           DP_FX_MDL_API void tokenizeArray( mi::base::Handle<mi::neuraylib::IValue_array const> const& value );
           DP_FX_MDL_API void tokenizeBSDFMeasurement( mi::base::Handle<mi::neuraylib::IValue_bsdf_measurement const> const& value );
@@ -136,6 +145,7 @@ namespace dp
           mi::base::Handle<mi::neuraylib::IExpression_factory>        m_mdlExpressionFactory;
           mi::base::Handle<mi::neuraylib::IMdl_factory>               m_mdlFactory;
           dp::util::DynamicLibrarySharedPtr                           m_mdlSDK;
+          mi::base::Handle<mi::neuraylib::IType_factory>              m_mdlTypeFactory;
           mi::base::Handle<mi::neuraylib::IValue_factory>             m_mdlValueFactory;
           mi::base::Handle<mi::neuraylib::INeuray>                    m_neuray;
           mi::base::Handle<mi::neuraylib::ITransaction>               m_transaction;

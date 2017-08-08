@@ -37,10 +37,82 @@ namespace dp
   {
     namespace mdl
     {
+      static std::string getTypeName(mi::base::Handle<mi::neuraylib::IType const> const& type);
       static bool isHiddenMaterial( mi::base::Handle<mi::neuraylib::IAnnotation_block const> const& annotations );
       static std::string stripTrailingDigits( std::string const& name );
-      static std::string typeName( mi::base::Handle<mi::neuraylib::IType const> const& type );
 
+      static std::string getTypeName(mi::base::Handle<mi::neuraylib::IType const> const& type)
+      {
+        mi::neuraylib::IType::Kind kind = type->get_kind();
+        switch (kind)
+        {
+          case mi::neuraylib::IType::TK_ALIAS:
+            return getTypeName(mi::base::make_handle(type.get_interface<mi::neuraylib::IType_alias const>()->get_aliased_type()));
+          case mi::neuraylib::IType::TK_ARRAY:
+          {
+            mi::base::Handle<mi::neuraylib::IType_array const> array = type.get_interface<mi::neuraylib::IType_array const>();
+            std::ostringstream oss;
+            oss << getTypeName(mi::base::make_handle(array->get_element_type()));
+            if (array->is_immediate_sized())
+            {
+              mi::Size size = array->get_size();
+              oss << "[" << size << "]";
+            }
+            else
+            {
+              // deferredSize can be an empty string. Normally it contains strings like "::df::L1559::N".
+              // The actual size can be determined via the return type of the T[](...) function which constructs this array.
+              oss << "[N]";
+            }
+            return(oss.str());
+          }
+          case mi::neuraylib::IType::TK_BOOL:
+            return("bool");
+          case mi::neuraylib::IType::TK_BSDF_MEASUREMENT:
+            return("BsdfMeasurement");
+          case mi::neuraylib::IType::TK_BSDF:
+            return("bsdf");
+          case mi::neuraylib::IType::TK_EDF:
+            return("edf");
+          case mi::neuraylib::IType::TK_ENUM:
+            return type.get_interface<mi::neuraylib::IType_enum const>()->get_symbol();
+          case mi::neuraylib::IType::TK_COLOR:
+            return("color");
+          case mi::neuraylib::IType::TK_FLOAT:
+            return("float");
+          case mi::neuraylib::IType::TK_INT:
+            return("int");
+          case mi::neuraylib::IType::TK_LIGHT_PROFILE:
+            return("LightProfile");
+          case mi::neuraylib::IType::TK_MATRIX:
+          {
+            mi::base::Handle<mi::neuraylib::IType_matrix const> matrix = type.get_interface<mi::neuraylib::IType_matrix const>();
+            DP_ASSERT(mi::base::make_handle(mi::base::make_handle(matrix->get_element_type())->get_element_type())->get_kind() == mi::neuraylib::IType::TK_FLOAT);
+            std::ostringstream oss;
+            oss << getTypeName(mi::base::make_handle(mi::base::make_handle(matrix->get_element_type())->get_element_type())) << matrix->get_size() << "x" << matrix->get_size();
+            return(oss.str());
+          }
+          case mi::neuraylib::IType::TK_STRING:
+            return("string");
+          case mi::neuraylib::IType::TK_STRUCT:
+            return type.get_interface<mi::neuraylib::IType_struct const>()->get_symbol();
+          case mi::neuraylib::IType::TK_TEXTURE:
+            return("texture_2d");
+          case mi::neuraylib::IType::TK_VDF:
+            return("vdf");
+          case mi::neuraylib::IType::TK_VECTOR:
+          {
+            mi::base::Handle<mi::neuraylib::IType_vector const> vector = type.get_interface<mi::neuraylib::IType_vector const>();
+            DP_ASSERT(mi::base::make_handle(vector->get_element_type())->get_kind() == mi::neuraylib::IType::TK_FLOAT);
+            std::ostringstream oss;
+            oss << getTypeName(mi::base::make_handle(vector->get_element_type())) << vector->get_size();
+            return(oss.str());
+          }
+          default:
+            DP_ASSERT(!"never passed this path!");
+            return("");
+        }
+      }
 
       static bool isHiddenMaterial( mi::base::Handle<mi::neuraylib::IAnnotation_block const> const& annotations )
       {
@@ -69,79 +141,18 @@ namespace dp
         return( name );
       }
 
-      static std::string typeName( mi::base::Handle<mi::neuraylib::IType const> const& type )
+      static std::string typeModifier(mi::base::Handle<mi::neuraylib::IType const> const& type)
       {
-        mi::neuraylib::IType::Kind kind = type->get_kind();
-        switch( kind )
+        mi::Uint32 modifiers = type->get_all_type_modifiers();
+        if (modifiers & mi::neuraylib::IType::MK_UNIFORM)
         {
-          case mi::neuraylib::IType::TK_ALIAS :
-            return typeName(mi::base::make_handle(type.get_interface<mi::neuraylib::IType_alias const>()->get_aliased_type()));
-          case mi::neuraylib::IType::TK_ARRAY:
-            {
-              mi::base::Handle<mi::neuraylib::IType_array const> array = type.get_interface<mi::neuraylib::IType_array const>();
-              std::ostringstream oss;
-              oss << typeName( mi::base::make_handle( array->get_element_type() ) );
-              if ( array->is_immediate_sized() )
-              {
-                mi::Size size = array->get_size();
-                oss << "[" << size << "]";
-              }
-              else
-              {
-                const char* deferredSize = array->get_deferred_size();
-                DP_ASSERT(deferredSize != nullptr);
-                // deferredSize can be an empty string. Normally it contains strings like "::df::L1559::N".
-                // The actual size can be determined via the return type of the T[](...) function which constructs this array.
-                oss << "[" << std::string( deferredSize ) << "]";
-              }
-              return( oss.str() );
-            }
-          case mi::neuraylib::IType::TK_BOOL :
-            return( "Bool" );
-          case mi::neuraylib::IType::TK_BSDF_MEASUREMENT :
-            return( "BsdfMeasurement" );
-          case mi::neuraylib::IType::TK_BSDF :
-            return( "Bsdf" );
-          case mi::neuraylib::IType::TK_EDF :
-            return( "Edf" );
-          case mi::neuraylib::IType::TK_ENUM :
-            return type.get_interface<mi::neuraylib::IType_enum const>()->get_symbol();
-          case mi::neuraylib::IType::TK_COLOR :
-            return( "Color" );
-          case mi::neuraylib::IType::TK_FLOAT :
-            return( "Float" );
-          case mi::neuraylib::IType::TK_INT :
-            return( "Int" );
-          case mi::neuraylib::IType::TK_LIGHT_PROFILE :
-            return( "LightProfile" );
-          case mi::neuraylib::IType::TK_MATRIX :
-            {
-              mi::base::Handle<mi::neuraylib::IType_matrix const> matrix = type.get_interface<mi::neuraylib::IType_matrix const>();
-              DP_ASSERT(mi::base::make_handle(mi::base::make_handle(matrix->get_element_type())->get_element_type())->get_kind() == mi::neuraylib::IType::TK_FLOAT);
-              std::ostringstream oss;
-              oss << typeName(mi::base::make_handle(mi::base::make_handle(matrix->get_element_type())->get_element_type())) << "<" << matrix->get_size() << "," << matrix->get_size() << ">";
-              return(oss.str());
-            }
-          case mi::neuraylib::IType::TK_STRING :
-            return( "String" );
-          case mi::neuraylib::IType::TK_STRUCT :
-            return type.get_interface<mi::neuraylib::IType_struct const>()->get_symbol();
-          case mi::neuraylib::IType::TK_TEXTURE :
-            return( "Texture" );
-          case mi::neuraylib::IType::TK_VDF :
-            return( "Vdf" );
-          case mi::neuraylib::IType::TK_VECTOR :
-            {
-              mi::base::Handle<mi::neuraylib::IType_vector const> vector = type.get_interface<mi::neuraylib::IType_vector const>();
-              DP_ASSERT(mi::base::make_handle(vector->get_element_type())->get_kind() == mi::neuraylib::IType::TK_FLOAT);
-              std::ostringstream oss;
-              oss << typeName(mi::base::make_handle(vector->get_element_type())) << "<" << vector->get_size() << ">";
-              return(oss.str());
-            }
-          default :
-            DP_ASSERT( !"never passed this path!" );
-            return( "" );
+          return "uniform";
         }
+        else if (modifiers & mi::neuraylib::IType::MK_VARYING)
+        {
+          return "varying";
+        }
+        return "";
       }
 
 
@@ -170,14 +181,16 @@ namespace dp
             break;
           case mi::base::MESSAGE_SEVERITY_WARNING:
             levelString = "WARNING";
-            handled = boost::contains( m, "extra parenthesis around function name" )
+            handled = boost::contains(m, "conversion from 'float' to 'float3' must be explicit")
+                   || boost::contains(m, "conversion from 'float' to 'color' must be explicit")
+                   || boost::contains( m, "extra parenthesis around function name" )
                    || boost::contains( m, "unused parameter" )
                    || boost::contains( m, "unused variable" )
                    || boost::ends_with( m, "material parameters of type 'bsdf' are forbidden" );
             break;
           case mi::base::MESSAGE_SEVERITY_INFO:
             levelString = "INFO";
-            handled = boost::starts_with( m, "Found MDL module" )
+            handled = boost::starts_with( m, "Loading module" )
                    || boost::starts_with( m, "Loading BSDF measurement" )
                    || boost::starts_with( m, "Loading lightprofile" );
             break;
@@ -207,7 +220,10 @@ namespace dp
       MDLTokenizer::MDLTokenizer()
         : m_filterDefaults( false )
       {
-        m_mdlSDK = dp::util::DynamicLibrary::createFromFile( "libmdl_sdk.dll" );
+        DP_ASSERT(getenv("MDL_SDK_PATH"))
+        std::string mdlSDKPath = std::string(getenv("MDL_SDK_PATH"));
+
+        m_mdlSDK = dp::util::DynamicLibrary::createFromFile( mdlSDKPath + "/nt-x86-64/lib/libmdl_sdk.dll" );
         if ( !m_mdlSDK )
         {
           std::cerr << "MDL2XML: Can't load libmdl_sdk.dll" << std::endl;
@@ -232,6 +248,7 @@ namespace dp
 
         m_mdlFactory = m_neuray->get_api_component<mi::neuraylib::IMdl_factory>();
         m_mdlExpressionFactory = m_mdlFactory->create_expression_factory(m_transaction.get());
+        m_mdlTypeFactory = m_mdlFactory->create_type_factory(m_transaction.get());
         m_mdlValueFactory = m_mdlFactory->create_value_factory(m_transaction.get());
 
         char * mdlSystemPath = getenv( "MDL_SYSTEM_PATH" );
@@ -247,6 +264,7 @@ namespace dp
       MDLTokenizer::~MDLTokenizer()
       {
         // throw away everything before m_neuray is shut down
+        m_mdlTypeFactory.reset();
         m_mdlValueFactory.reset();
         m_mdlExpressionFactory.reset();
         m_mdlFactory.reset();
@@ -413,11 +431,40 @@ namespace dp
         }
       }
 
+      void MDLTokenizer::tokenizeAnnotations(mi::base::Handle<mi::neuraylib::IAnnotation_block const> annotations)
+      {
+        if (annotations)
+        {
+          for (mi::Size i = 0; i < annotations->get_size(); i++)
+          {
+            mi::base::Handle<mi::neuraylib::IAnnotation const> annotation = mi::base::make_handle(annotations->get_annotation(i));
+
+            mi::base::Handle<mi::neuraylib::IExpression_list const> annotationArguments = mi::base::make_handle(annotation->get_arguments());
+            std::vector<std::pair<std::string, std::string>> argumentsData;
+            argumentsData.reserve(annotationArguments->get_size());
+            for (mi::Size j = 0; j < annotationArguments->get_size(); j++)
+            {
+              argumentsData.push_back(std::make_pair(getTypeName(mi::base::make_handle(mi::base::make_handle(annotationArguments->get_expression(j))->get_type())), annotationArguments->get_name(j)));
+            }
+
+            if (annotationBegin(annotation->get_name(), argumentsData))
+            {
+              for (mi::Size j = 0; j < annotationArguments->get_size(); j++)
+              {
+                tokenizeArgument(j, annotationArguments->get_name(j), mi::base::make_handle(annotationArguments->get_expression(j)),
+                  mi::base::Handle<mi::neuraylib::IExpression const>());
+              }
+              annotationEnd();
+            }
+          }
+        }
+      }
+
       void MDLTokenizer::tokenizeArgument(mi::Size idx, std::string const& name, mi::base::Handle<mi::neuraylib::IExpression const> const& argumentExpression, mi::base::Handle<mi::neuraylib::IExpression const> const& defaultExpression)
       {
         if (!(m_filterDefaults && defaultExpression && (m_mdlExpressionFactory->compare(argumentExpression.get(), defaultExpression.get()) == 0)))
         {
-          if (argumentBegin(dp::checked_cast<unsigned int>(idx), typeName(mi::base::make_handle(argumentExpression->get_type())), name))
+          if (argumentBegin(idx))
           {
             tokenizeExpression(argumentExpression);
             argumentEnd();
@@ -430,11 +477,18 @@ namespace dp
         mi::base::Handle<mi::neuraylib::IType const> type = mi::base::make_handle(value->get_type());
         tokenizeType(type);
 
-        if (arrayBegin(typeName(type), value->get_size()))
+        std::string typeName = getTypeName(type);
+        DP_ASSERT(typeName.back() == ']')
+
+        if (arrayBegin(typeName.substr(0, typeName.find('[')), value->get_size()))
         {
           for (mi::Size i = 0; i < value->get_size(); i++)
           {
-            tokenizeValue(mi::base::make_handle(value->get_value(i)));
+            if (arrayElementBegin(i))
+            {
+              tokenizeValue(mi::base::make_handle(value->get_value(i)));
+              arrayElementEnd();
+            }
           }
           arrayEnd();
         }
@@ -479,12 +533,30 @@ namespace dp
 
         mi::base::Handle<mi::neuraylib::IType const> type = mi::base::make_handle(call->get_type());
         tokenizeType(type);
-        if (callBegin(typeName(type), callDefinition))
+
+        std::string typeName = getTypeName(type);
+
+        DP_ASSERT(callDefinition.find_first_of('(') != std::string::npos);
+        std::string callName = callDefinition.substr(0, callDefinition.find_first_of('('));
+        if (callName == "mdl::T[]")
+        {
+          callName = typeName;
+        }
+
+        // get the arguments
+        mi::base::Handle<mi::neuraylib::IExpression_list const> arguments = mi::base::make_handle(call->get_arguments());
+        std::vector<std::pair<std::string, std::string>> argumentsData;
+        argumentsData.reserve(arguments->get_size());
+        for (mi::Size i = 0; i < arguments->get_size(); i++)
+        {
+          argumentsData.push_back(std::make_pair(getTypeName(mi::base::make_handle(mi::base::make_handle(arguments->get_expression(i))->get_type())), arguments->get_name(i)));
+        }
+
+        if (callBegin(typeName, callName, argumentsData))
         {
           mi::base::Handle<mi::neuraylib::IFunction_definition const> functionDefinition = mi::base::make_handle(m_transaction->access<mi::neuraylib::IFunction_definition>(callDefinition.c_str()));
           mi::base::Handle<mi::neuraylib::IExpression_list const> defaults = mi::base::make_handle(functionDefinition->get_defaults());
 
-          mi::base::Handle<mi::neuraylib::IExpression_list const> arguments = mi::base::make_handle(call->get_arguments());
           for (mi::Size i = 0; i<arguments->get_size(); i++)
           {
             tokenizeArgument(i, arguments->get_name(i), mi::base::make_handle(arguments->get_expression(i)),
@@ -578,6 +650,8 @@ namespace dp
             tokenizeParameter(i);
           }
 
+          tokenizeAnnotations(mi::base::make_handle(m_materialDefinition->get_annotations()));
+
           mi::Size temporaryCount = m_compiledMaterial->get_temporary_count();
           for (mi::Uint32 ti = 0; ti < temporaryCount; ti++)
           {
@@ -597,11 +671,18 @@ namespace dp
 
       void MDLTokenizer::tokenizeMatrix( mi::base::Handle<mi::neuraylib::IValue_matrix const> const& value )
       {
-        if (matrixBegin(typeName(mi::base::make_handle(value->get_type()))))
+        mi::base::Handle<mi::neuraylib::IType const> type = mi::base::make_handle(value->get_type());
+        tokenizeType(type);
+
+        if (matrixBegin(getTypeName(type)))
         {
           for (mi::Size i = 0; i < value->get_size(); i++)
           {
-            tokenizeVector(mi::base::make_handle(value->get_value(i)));
+            if (matrixElementBegin(i))
+            {
+              tokenizeVector(mi::base::make_handle(value->get_value(i)));
+              matrixElementEnd();
+            }
           }
           matrixEnd();
         }
@@ -610,9 +691,11 @@ namespace dp
       void MDLTokenizer::tokenizeParameter( mi::Size parameterIndex )
       {
         char const* parameterName = m_compiledMaterial->get_parameter_name( parameterIndex );
-        if (parameterBegin(dp::checked_cast<unsigned int>(parameterIndex), parameterName ? parameterName : ""))
+        std::string modifier = typeModifier(mi::base::make_handle(mi::base::make_handle(m_materialDefinition->get_parameter_types())->get_type(parameterName)));   // modifier needs to be taken from the material definition !
+        mi::base::Handle<mi::neuraylib::IValue const> value(m_compiledMaterial->get_argument(parameterIndex));
+        if (parameterBegin(dp::checked_cast<unsigned int>(parameterIndex), modifier, getTypeName(mi::base::make_handle(value->get_type())), parameterName ? parameterName : ""))
         {
-          tokenizeValue(mi::base::make_handle(m_compiledMaterial->get_argument(parameterIndex)));
+          tokenizeValue(value);
 
           // only named parameters need annotations!!
           if (parameterName)
@@ -620,24 +703,7 @@ namespace dp
             mi::base::Handle<mi::neuraylib::IAnnotation_list const> annotations = mi::base::make_handle(m_materialDefinition->get_parameter_annotations());
             DP_ASSERT(annotations);
 
-            mi::base::Handle<mi::neuraylib::IAnnotation_block const> parameterAnnotations = mi::base::make_handle(annotations->get_annotation_block(parameterName));
-            if (parameterAnnotations)
-            {
-              for (mi::Size i = 0; i < parameterAnnotations->get_size(); i++)
-              {
-                mi::base::Handle<mi::neuraylib::IAnnotation const> annotation = mi::base::make_handle(parameterAnnotations->get_annotation(i));
-                std::string annotationName = annotation->get_name();
-                if (annotationBegin(annotationName))
-                {
-                  mi::base::Handle<mi::neuraylib::IExpression_list const> annotationArguments = mi::base::make_handle(annotation->get_arguments());
-                  for (mi::Size j = 0; j < annotationArguments->get_size(); j++)
-                  {
-                    tokenizeExpression(mi::base::make_handle(annotationArguments->get_expression(j)));
-                  }
-                  annotationEnd();
-                }
-              }
-            }
+            tokenizeAnnotations(mi::base::make_handle(annotations->get_annotation_block(parameterName)));
           }
 
           parameterEnd();
@@ -657,9 +723,18 @@ namespace dp
 
         if (structureBegin(type->get_symbol()))
         {
+          mi::base::Handle<mi::neuraylib::IValue_struct> defaultValue(m_mdlValueFactory->create_struct(mi::base::make_handle(m_mdlTypeFactory->create_struct(type->get_symbol())).get()));
           for (mi::Size i = 0; i < structValue->get_size(); i++)
           {
-            tokenizeValue(mi::base::make_handle(structValue->get_value(i)));
+            if (!(m_filterDefaults && (m_mdlValueFactory->compare(structValue->get_value(i), defaultValue->get_value(i)) == 0)))
+            {
+              if (structureMemberBegin(dp::checked_cast<unsigned int>(i)))
+              {
+                tokenizeValue(mi::base::make_handle(structValue->get_value(i)));
+                structureMemberEnd();
+              }
+            }
+
           }
           structureEnd();
         }
@@ -673,7 +748,7 @@ namespace dp
           {
             mi::base::Handle<mi::neuraylib::IType const> componentType = mi::base::make_handle(type->get_component_type(i));
             tokenizeType(componentType);
-            structureTypeElement( typeName( componentType ), type->get_field_name( i ) );
+            structureTypeElement(getTypeName( componentType ), type->get_field_name( i ) );
           }
           structureTypeEnd();
         }
@@ -703,7 +778,7 @@ namespace dp
         }
         else
         {
-          defaultRef( "Texture" );
+          defaultRef( "texture_2d" );
         }
       }
 
@@ -738,6 +813,7 @@ namespace dp
           case mi::neuraylib::IType::TK_FLOAT :
           case mi::neuraylib::IType::TK_INT :
           case mi::neuraylib::IType::TK_LIGHT_PROFILE :
+          case mi::neuraylib::IType::TK_STRING :
           case mi::neuraylib::IType::TK_TEXTURE :
           case mi::neuraylib::IType::TK_VDF :
             break;
@@ -818,11 +894,15 @@ namespace dp
 
       void MDLTokenizer::tokenizeVector( mi::base::Handle<mi::neuraylib::IValue_vector const> const& value )
       {
-        if (vectorBegin(typeName(mi::base::make_handle(value->get_type()))))
+        if (vectorBegin(getTypeName(mi::base::make_handle(value->get_type()))))
         {
           for (mi::Size i = 0; i < value->get_size(); i++)
           {
-            tokenizeValue(mi::base::make_handle(value->get_value(i)));
+            if (vectorElementBegin(i))
+            {
+              tokenizeValue(mi::base::make_handle(value->get_value(i)));
+              vectorElementEnd();
+            }
           }
           vectorEnd();
         }

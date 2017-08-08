@@ -36,10 +36,11 @@ TiXmlElement * XMLBuilder::getXMLTree()
   return( m_libraryElement );
 }
 
-bool XMLBuilder::annotationBegin( std::string const& name )
+bool XMLBuilder::annotationBegin( std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments)
 {
   m_materialElements.back().push( new TiXmlElement( "annotation" ) );
   m_materialElements.back().top()->SetAttribute( "text", std::string( name + "(" ).c_str() );
+  m_currentArguments.push(arguments);
   return true;
 }
 
@@ -55,13 +56,19 @@ void XMLBuilder::annotationEnd()
   text += ")";
   m_materialElements.back().top()->SetAttribute( "text", text.c_str() );
   popElement();
+
+  DP_ASSERT(!m_currentArguments.empty());
+  m_currentArguments.pop();
 }
 
-bool XMLBuilder::argumentBegin( unsigned int idx, std::string const& type, std::string const& name )
+bool XMLBuilder::argumentBegin( size_t idx )
 {
-  m_currentType = type;
+  DP_ASSERT(!m_currentArguments.empty() && (idx < m_currentArguments.top().size()));
+  m_currentType = m_currentArguments.top()[idx].first;
+
   m_materialElements.back().push( new TiXmlElement( "argument" ) );
-  m_materialElements.back().top()->SetAttribute( "name", name.c_str() );
+  m_materialElements.back().top()->SetAttribute( "name", m_currentArguments.top()[idx].second.c_str() );
+
   return true;
 }
 
@@ -92,11 +99,20 @@ void XMLBuilder::arrayEnd()
   DP_ASSERT( strcmp( m_materialElements.back().top()->Value(), "argument" ) == 0 );
 }
 
-bool XMLBuilder::callBegin( std::string const& type, std::string const& name )
+bool XMLBuilder::arrayElementBegin(size_t idx)
+{
+  return true;
+}
+
+void XMLBuilder::arrayElementEnd()
+{}
+
+bool XMLBuilder::callBegin( std::string const& type, std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments)
 {
   m_materialElements.back().push( new TiXmlElement( "call" ) );
   m_materialElements.back().top()->SetAttribute( "name", name.c_str() );
   m_materialElements.back().top()->SetAttribute( "type", type.c_str() );
+  m_currentArguments.push(arguments);
   return( true );
 }
 
@@ -106,6 +122,8 @@ void XMLBuilder::callEnd()
   {
     popElement();
   }
+  DP_ASSERT(!m_currentArguments.empty());
+  m_currentArguments.pop();
 }
 
 void XMLBuilder::defaultRef( std::string const& type )
@@ -242,6 +260,14 @@ bool XMLBuilder::matrixBegin( std::string const& type )
   return true;
 }
 
+bool XMLBuilder::matrixElementBegin(size_t idx)
+{
+  return true;
+}
+
+void XMLBuilder::matrixElementEnd()
+{}
+
 void XMLBuilder::matrixEnd()
 {
   DP_ASSERT( !m_materialElements.back().empty() );
@@ -250,7 +276,7 @@ void XMLBuilder::matrixEnd()
   DP_ASSERT( strcmp( m_materialElements.back().top()->Value(), "argument" ) == 0 );
 }
 
-bool XMLBuilder::parameterBegin( unsigned int index, std::string const& name )
+bool XMLBuilder::parameterBegin( unsigned int index, std::string const& modifier, std::string const& type, std::string const& name )
 {
   TiXmlElement * parameterElement = new TiXmlElement( "parameter" );
   parameterElement->SetAttribute( "name", name.c_str() );
@@ -302,7 +328,7 @@ void XMLBuilder::referenceTemporary( unsigned int idx )
   }
 }
 
-bool XMLBuilder::structureBegin( std::string const& type )
+bool XMLBuilder::structureBegin(std::string const& name)
 {
   DP_ASSERT( !m_materialElements.back().empty() );
 #if !defined(NDEBUG)
@@ -324,7 +350,7 @@ bool XMLBuilder::structureBegin( std::string const& type )
             || ( strcmp( m_materialElements.back().top()->Value(), "struct" ) == 0 )
             || ( strcmp( m_materialElements.back().top()->Value(), "volume" ) == 0 ) );
     m_materialElements.back().push( new TiXmlElement( "struct" ) );
-    m_materialElements.back().top()->SetAttribute( "type", type.c_str() );
+    m_materialElements.back().top()->SetAttribute( "type", name.c_str() );
   }
   return true;
 }
@@ -354,6 +380,14 @@ void XMLBuilder::structureEnd()
             || ( strcmp( m_materialElements.back().top()->Value(), "volume" ) == 0 ) );
   }
 }
+
+bool XMLBuilder::structureMemberBegin(unsigned int idx)
+{
+  return true;
+}
+
+void XMLBuilder::structureMemberEnd()
+{}
 
 bool XMLBuilder::structureTypeBegin( std::string const& name )
 {
@@ -579,6 +613,14 @@ bool XMLBuilder::vectorBegin( std::string const& type )
   m_materialElements.back().top()->SetAttribute( "type", type.c_str() );
   return true;
 }
+
+bool XMLBuilder::vectorElementBegin(size_t idx)
+{
+  return true;
+}
+
+void XMLBuilder::vectorElementEnd()
+{}
 
 void XMLBuilder::vectorEnd()
 {

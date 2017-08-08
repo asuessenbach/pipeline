@@ -244,14 +244,16 @@ namespace dp
         return( m_materials );
       }
 
-      bool MaterialBuilder::annotationBegin( std::string const& name )
+      bool MaterialBuilder::annotationBegin( std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments)
       {
-        DP_ASSERT( !m_currentCall.empty() );
-        DP_ASSERT( !m_insideAnnotation );
-        m_insideAnnotation = true;
-        m_annotations.push_back( Argument( convertColons( convertName( stripArguments( name ) ) ) ) );
-        m_currentCall.push( &m_annotations.back() );
-        return true;
+        if (!m_currentCall.empty())
+        {
+          DP_ASSERT(!m_insideAnnotation);
+          m_insideAnnotation = true;
+          m_annotations.push_back(Argument(convertColons(convertName(stripArguments(name)))));
+          m_currentCall.push(&m_annotations.back());
+        }
+        return !m_currentCall.empty();
       }
 
       void MaterialBuilder::annotationEnd()
@@ -262,11 +264,12 @@ namespace dp
         m_currentCall.pop();
       }
 
-      bool MaterialBuilder::argumentBegin( unsigned int idx, std::string const& type, std::string const& name )
+      bool MaterialBuilder::argumentBegin( size_t idx )
       {
         if ( m_currentCall.top()->name == "mdl_materialGeometry" )
         {
-          if ( name == "displacement" )
+          std::string const& name = m_currentCall.top()->arguments[idx].first;
+          if (name == "displacement")
           {
             m_currentStage = &m_currentMaterial->second.stageData[dp::fx::Domain::VERTEX];
           }
@@ -314,7 +317,15 @@ namespace dp
         m_currentCall.pop();
       }
 
-      bool MaterialBuilder::callBegin( std::string const& type, std::string const& name )
+      bool MaterialBuilder::arrayElementBegin(size_t idx)
+      {
+        return true;
+      }
+
+      void MaterialBuilder::arrayElementEnd()
+      {}
+
+      bool MaterialBuilder::callBegin( std::string const& type, std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments)
       {
         bool goOn = true;
         std::string callName = translateFunctionName( convertColons( convertName( stripArguments( name ) ) ) );
@@ -573,6 +584,14 @@ namespace dp
         return true;
       }
 
+      bool MaterialBuilder::matrixElementBegin(size_t idx)
+      {
+        return true;
+      }
+
+      void MaterialBuilder::matrixElementEnd()
+      {}
+
       void MaterialBuilder::matrixEnd()
       {
         DP_ASSERT( 1 < m_currentCall.size() );
@@ -586,7 +605,7 @@ namespace dp
         m_currentCall.pop();
       }
 
-      bool MaterialBuilder::parameterBegin( unsigned int index, std::string const& name )
+      bool MaterialBuilder::parameterBegin( unsigned int index, std::string const& modifier, std::string const& type, std::string const& name )
       {
         DP_ASSERT( m_currentMaterial != m_materials.end() );
         DP_ASSERT( m_argument.empty() );
@@ -729,11 +748,11 @@ namespace dp
         m_currentStage->append(m_currentMaterial->second.temporaries[idx].stage);
       }
 
-      bool MaterialBuilder::structureBegin( std::string const& type )
+      bool MaterialBuilder::structureBegin(std::string const& name)
       {
         DP_ASSERT( !m_currentCall.empty() );
 
-        std::string callName = convertColons( convertName( type ) );
+        std::string callName = convertColons( convertName( name ) );
         if (m_currentStage)
         {
           m_currentStage->structures.insert(callName);
@@ -754,6 +773,14 @@ namespace dp
           m_currentCall.pop();
         }
       }
+
+      bool MaterialBuilder::structureMemberBegin(unsigned int idx)
+      {
+        return true;
+      }
+
+      void MaterialBuilder::structureMemberEnd()
+      {}
 
       bool MaterialBuilder::structureTypeBegin( std::string const& name )
       {
@@ -977,6 +1004,14 @@ namespace dp
         m_currentCall.push( &m_currentCall.top()->arguments.back().second );
         return true;
       }
+
+      bool MaterialBuilder::vectorElementBegin(size_t id)
+      {
+        return true;
+      }
+
+      void MaterialBuilder::vectorElementEnd()
+      {}
 
       void MaterialBuilder::vectorEnd()
       {
