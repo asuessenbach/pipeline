@@ -264,9 +264,9 @@ namespace dp
       MDLTokenizer::~MDLTokenizer()
       {
         // throw away everything before m_neuray is shut down
+        m_mdlExpressionFactory.reset();
         m_mdlTypeFactory.reset();
         m_mdlValueFactory.reset();
-        m_mdlExpressionFactory.reset();
         m_mdlFactory.reset();
         m_transaction->commit();
         m_transaction.reset();
@@ -282,11 +282,11 @@ namespace dp
         {
           if (fieldName == "ior")
           {
-            isDefault = (m_mdlExpressionFactory->compare(expression.get(), m_mdlExpressionFactory->create_constant(m_mdlValueFactory->create_color(1.0f, 1.0f, 1.0f))) == 0);
+            isDefault = (m_mdlExpressionFactory->compare(expression.get(), mi::base::make_handle(m_mdlExpressionFactory->create_constant(mi::base::make_handle(m_mdlValueFactory->create_color(1.0f, 1.0f, 1.0f)).get())).get()) == 0);
           }
           else if (fieldName == "thin_walled")
           {
-            isDefault = (m_mdlExpressionFactory->compare(expression.get(), m_mdlExpressionFactory->create_constant(m_mdlValueFactory->create_bool(false))) == 0);
+            isDefault = (m_mdlExpressionFactory->compare(expression.get(), mi::base::make_handle(m_mdlExpressionFactory->create_constant(mi::base::make_handle(m_mdlValueFactory->create_bool(false)).get())).get()) == 0);
           }
         }
         return(isDefault);
@@ -346,7 +346,7 @@ namespace dp
           else
           {
             moduleName = std::string("mdl") + moduleName;
-            mi::base::Handle<const mi::neuraylib::IModule> module = mi::base::make_handle(m_transaction->access<mi::neuraylib::IModule>(moduleName.c_str()));
+            mi::base::Handle<const mi::neuraylib::IModule> module(m_transaction->access<mi::neuraylib::IModule>(moduleName.c_str()));
             DP_ASSERT(module.is_valid_interface());
             DP_ASSERT(module->get_filename());
             std::string fn = module->get_filename();
@@ -422,11 +422,11 @@ namespace dp
       {
         if ( boost::starts_with( functionName, "mdl::base" ) )
         {
-          mi::base::Handle<const mi::neuraylib::IModule> module = mi::base::make_handle(m_transaction->access<mi::neuraylib::IModule>("mdl::base"));
+          mi::base::Handle<const mi::neuraylib::IModule> module(m_transaction->access<mi::neuraylib::IModule>("mdl::base"));
           mi::base::Handle<const mi::IArray> overloads = mi::base::make_handle(module->get_function_overloads(functionName.c_str()));
           DP_ASSERT(overloads->get_length() == 1);
           mi::base::Handle<const mi::IString> mdlFunctionName = mi::base::make_handle(overloads->get_element<mi::IString>(static_cast<mi::Uint32>(0)));
-          mi::base::Handle<const mi::neuraylib::IFunction_definition> functionDefinition = mi::base::make_handle(m_transaction->access<mi::neuraylib::IFunction_definition>(mdlFunctionName->get_c_str()));
+          mi::base::Handle<const mi::neuraylib::IFunction_definition> functionDefinition(m_transaction->access<mi::neuraylib::IFunction_definition>(mdlFunctionName->get_c_str()));
           tokenizeType(mi::base::make_handle(functionDefinition->get_return_type()));
         }
       }
@@ -554,7 +554,7 @@ namespace dp
 
         if (callBegin(typeName, callName, argumentsData))
         {
-          mi::base::Handle<mi::neuraylib::IFunction_definition const> functionDefinition = mi::base::make_handle(m_transaction->access<mi::neuraylib::IFunction_definition>(callDefinition.c_str()));
+          mi::base::Handle<mi::neuraylib::IFunction_definition const> functionDefinition(m_transaction->access<mi::neuraylib::IFunction_definition>(callDefinition.c_str()));
           mi::base::Handle<mi::neuraylib::IExpression_list const> defaults = mi::base::make_handle(functionDefinition->get_defaults());
 
           for (mi::Size i = 0; i<arguments->get_size(); i++)
@@ -612,7 +612,9 @@ namespace dp
 
       void MDLTokenizer::tokenizeField( std::string const& fieldName )
       {
-        mi::base::Handle<mi::neuraylib::IExpression const> expression = mi::base::make_handle(m_compiledMaterial->get_field(fieldName.c_str()));
+        mi::base::Handle<const mi::neuraylib::IExpression_direct_call> body(m_compiledMaterial->get_body());
+        mi::base::Handle<const mi::neuraylib::IExpression_list> arguments(body->get_arguments());
+        mi::base::Handle<mi::neuraylib::IExpression const> expression(arguments->get_expression(fieldName.c_str()));
         if (!(m_filterDefaults && checkDefaultField(fieldName, expression)))
         {
           if ( fieldBegin( fieldName ) )
@@ -767,7 +769,7 @@ namespace dp
       {
         if ( value && value->get_value() )
         {
-          mi::base::Handle<mi::neuraylib::ITexture const> texture = mi::base::make_handle(m_transaction->access<mi::neuraylib::ITexture>(value->get_value()));
+          mi::base::Handle<mi::neuraylib::ITexture const> texture(m_transaction->access<mi::neuraylib::ITexture>(value->get_value()));
           std::string fileName = texture->get_image();
           DP_ASSERT( boost::starts_with( fileName, "MI_default_image_" ) );
           boost::erase_head( fileName, static_cast<int>( strlen( "MI_default_image_" ) ) );
