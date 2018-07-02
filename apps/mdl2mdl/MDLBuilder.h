@@ -271,7 +271,7 @@ class MDLBuilder : public dp::fx::mdl::MDLTokenizer
   protected:
     bool annotationBegin( std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments) override;
     void annotationEnd() override;
-    bool argumentBegin( size_t idx ) override;
+    bool argumentBegin( size_t idx, std::string const& name ) override;
     void argumentEnd() override;
     bool arrayBegin( std::string const& type, size_t size ) override;
     void arrayEnd() override;

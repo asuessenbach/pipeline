@@ -264,11 +264,10 @@ namespace dp
         m_currentCall.pop();
       }
 
-      bool MaterialBuilder::argumentBegin( size_t idx )
+      bool MaterialBuilder::argumentBegin( size_t idx, std::string const& name )
       {
         if ( m_currentCall.top()->name == "mdl_materialGeometry" )
         {
-          std::string const& name = m_currentCall.top()->arguments[idx].first;
           if (name == "displacement")
           {
             m_currentStage = &m_currentMaterial->second.stageData[dp::fx::Domain::VERTEX];
@@ -1269,20 +1268,18 @@ namespace dp
           const std::map<std::string,std::string> typeMap =
           {
             { "Bool",               "bool"      },
-            { "BSDF",               "vec4"      },
+            { "bsdf",               "vec4"      },
             { "BsdfMeasurement",    "sampler3D" },
-            { "Color",              "vec3"      },
-            { "EDF",                "vec4"      },
-            { "Float",              "float"     },
-            { "Float<2>",           "vec2"      },
-            { "Float<3>",           "vec3"      },
-            { "Float<4>",           "vec4"      },
-            { "Float<3,3>",         "mat3"      },
-            { "Float<4,4>",         "mat4"      },
+            { "color",              "vec3"      },
+            { "edf",                "vec4"      },
+            { "float2",             "vec2"      },
+            { "float3",             "vec3"      },
+            { "float4",             "vec4"      },
+            { "float3x3",           "mat3"      },
+            { "float4x4",           "mat4"      },
             { "LightProfile",       "vec4"      },
-            { "Sint32",             "int"       },
-            { "Texture",            "sampler2D" },
-            { "VDF",                "vec4"      }
+            { "texture2d",          "sampler2D" },
+            { "vdf",                "vec4"      }
           };
           std::map<std::string,std::string>::const_iterator it = typeMap.find( baseType );
           if ( it != typeMap.end() )

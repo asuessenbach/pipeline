@@ -60,7 +60,7 @@ namespace dp
         protected:
           virtual bool annotationBegin( std::string const& name, std::vector<std::pair<std::string, std::string>> const& arguments) = 0;
           virtual void annotationEnd() = 0;
-          virtual bool argumentBegin( size_t idx ) = 0;
+          virtual bool argumentBegin( size_t idx, std::string const& name ) = 0;
           virtual void argumentEnd() = 0;
           virtual bool arrayBegin( std::string const & type, size_t size ) = 0;
           virtual void arrayEnd() = 0;

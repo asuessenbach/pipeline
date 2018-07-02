@@ -230,12 +230,8 @@ namespace dp
           throw dp::FileNotFoundException( "libmdl_sdk.dll" );
         }
 
-        typedef mi::neuraylib::INeuray* (INeuray_factory)( mi::neuraylib::IAllocator*, mi::Uint32 );
-        INeuray_factory* factory = (INeuray_factory*)m_mdlSDK->getSymbol( "mi_neuray_factory" );
-        DP_ASSERT( factory );
-
-        m_neuray = factory( 0, MI_NEURAYLIB_API_VERSION );
-        DP_ASSERT( m_neuray.is_valid_interface() );
+        m_neuray = mi::neuraylib::mi_factory<mi::neuraylib::INeuray>(m_mdlSDK->getSymbol("mi_factory"));
+        DP_ASSERT(m_neuray.is_valid_interface());
         DP_VERIFY( m_neuray->start() == 0 );
 
         m_database = m_neuray->get_api_component<mi::neuraylib::IDatabase>();
@@ -464,7 +460,7 @@ namespace dp
       {
         if (!(m_filterDefaults && defaultExpression && (m_mdlExpressionFactory->compare(argumentExpression.get(), defaultExpression.get()) == 0)))
         {
-          if (argumentBegin(idx))
+          if ( argumentBegin( idx, name ) )
           {
             tokenizeExpression(argumentExpression);
             argumentEnd();

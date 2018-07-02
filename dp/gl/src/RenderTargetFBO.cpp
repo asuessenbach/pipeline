@@ -852,7 +852,7 @@ namespace dp
 
       if ( m_clearMask & TBM_STENCIL_BUFFER )
       {
-        glClearBufferuiv( GL_STENCIL, 0, &m_clearStencil );
+        glClearBufferiv( GL_STENCIL, 0, &m_clearStencil );
       }
 
       return true;

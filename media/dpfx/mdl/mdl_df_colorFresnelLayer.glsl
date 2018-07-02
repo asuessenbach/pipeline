@@ -25,20 +25,20 @@ float fresnel( in float eta1, in float eta2, in float cosTheta1 )
 // with eta = eta2 / eta1, we have
 //  - when hitting a front face: eta2 == ior, eta1 == 1.0f => eta = ior
 //  - when hitting a back face : eta2 == 1.0f, eta1 == ior => eta = 1.0f / ior
-float fresnel( in vec3 N, in float ior )
+vec3 fresnel( in vec3 N, in vec3 ior )
 {
   float cosTheta1 = dot( N, viewDir );
   if ( gl_FrontFacing )
   {
-    return( ( 1.0f, ior, cosTheta1 ) );
+    return( vec3( fresnel( 1.0f, ior[0], cosTheta1 ), fresnel( 1.0f, ior[1], cosTheta1 ), fresnel( 1.0f, ior[2], cosTheta1 ) ) );
   }
   else
   {
-    return( ( ior, 1.0f, cosTheta1 ) );
+    return( vec3( fresnel( ior[0], 1.0f, cosTheta1 ), fresnel( ior[1], 1.0f, cosTheta1 ), fresnel( ior[2], 1.0f, cosTheta1 ) ) );
   }
 }
 
-vec4 mdl_df_fresnelLayer( in float ior, in float weight, in vec4 layer, in vec4 base, in vec3 normal )
+vec4 mdl_df_fresnelLayer( in vec3 ior, in vec3 weight, in vec4 layer, in vec4 base, in vec3 normal )
 {
   return( vec4( mix( base.rgb, layer.rgb, weight * fresnel( normal, ior ) ), base.a ) );
 }

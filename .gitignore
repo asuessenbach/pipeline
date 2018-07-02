@@ -1,3 +1,6 @@
+.editorconfig
+.gitignore
+
 /3rdparty/
 !/3rdparty/assimp
 !/3rdparty/jsoncpp
@@ -6,5 +9,9 @@
 
 /temp/
 /builds/
+
+/media/effects/mdl
+/media/scenes
+/media/textures
 
 /test/scripts/test_launch_site.txt

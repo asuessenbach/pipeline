@@ -177,7 +177,7 @@ namespace dp
       // clear interface
       TargetBufferMask  m_clearMask;
       GLclampd          m_clearDepth;
-      GLuint            m_clearStencil;
+      GLint             m_clearStencil;
 
     private:
       bool                    m_current;

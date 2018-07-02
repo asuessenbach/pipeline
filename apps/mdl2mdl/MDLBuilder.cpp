@@ -164,7 +164,7 @@ void MDLBuilder::annotationEnd()
   m_currentExpression.pop();
 }
 
-bool MDLBuilder::argumentBegin( size_t idx )
+bool MDLBuilder::argumentBegin( size_t idx, std::string const& name )
 {
 #if !defined(NDEBUG)
   DP_ASSERT(!m_currentExpression.empty() && dynamic_cast<ExpressionDataCall*>(m_currentExpression.top().get()));

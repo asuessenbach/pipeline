@@ -61,7 +61,7 @@ void XMLBuilder::annotationEnd()
   m_currentArguments.pop();
 }
 
-bool XMLBuilder::argumentBegin( size_t idx )
+bool XMLBuilder::argumentBegin( size_t idx, std::string const& name )
 {
   DP_ASSERT(!m_currentArguments.empty() && (idx < m_currentArguments.top().size()));
   m_currentType = m_currentArguments.top()[idx].first;

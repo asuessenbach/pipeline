@@ -660,7 +660,7 @@ namespace dp
 
         std::cerr << header << message << std::endl;
 
-        DP_ASSERT( !"encountered unhandled debug message!" );
+        DP_ASSERT( type == GL_DEBUG_TYPE_PERFORMANCE );
 
         if ( type == GL_DEBUG_TYPE_ERROR )
         {
